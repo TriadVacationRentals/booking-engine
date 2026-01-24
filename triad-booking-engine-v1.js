@@ -336,7 +336,6 @@ const container = document.querySelector('[data-listing-id]');
             const titleColor = state.isSelectingCheckout ? '#16A8EE' : '#0F2C3A';
             
             document.getElementById('calendar').innerHTML = `
-                <button class="calendar-close-btn" onclick="closeCalendar()">×</button>
                 <div style="margin-bottom: 20px;">
                     <div style="font-size: 16px; font-weight: 600; color: ${titleColor}; text-align: center; margin-bottom: 16px; padding: 12px; background: ${state.isSelectingCheckout ? '#e8f6fd' : '#f3f4f6'}; border-radius: 8px;">${viewTitle}</div>
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
@@ -352,6 +351,13 @@ const container = document.querySelector('[data-listing-id]');
                     <button id="clearDatesBtn" onclick="clearDates()" style="background: none; border: none; color: #9ca3af; font-size: 14px; font-weight: 500; cursor: not-allowed; padding: 8px 16px; border-radius: 8px; transition: all 0.2s;" disabled>Clear dates</button>
                 </div>
             `;
+
+            // Add close button AFTER rendering content
+            const closeBtn = document.createElement('button');
+            closeBtn.className = 'calendar-close-btn';
+            closeBtn.innerHTML = '×';
+            closeBtn.onclick = closeCalendar;
+            document.getElementById('calendar').prepend(closeBtn);
 
             attachDayListeners();
             updateClearButton();
