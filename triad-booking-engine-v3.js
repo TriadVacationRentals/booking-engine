@@ -352,13 +352,6 @@ const container = document.querySelector('[data-listing-id]');
                 </div>
             `;
 
-            // Add close button AFTER rendering content
-            const closeBtn = document.createElement('button');
-            closeBtn.className = 'calendar-close-btn';
-            closeBtn.innerHTML = '×';
-            closeBtn.onclick = closeCalendar;
-            document.getElementById('calendar').prepend(closeBtn);
-
             attachDayListeners();
             updateClearButton();
         }
