@@ -1,4 +1,4 @@
-        * {
+* {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
@@ -268,14 +268,42 @@
             margin-bottom: 20px;
         }
 
+        /* CALENDAR WITH CLOSE BUTTON */
         .calendar-wrapper {
             display: none;
             margin: 20px -8px 20px;
+            position: relative; /* ADDED FOR CLOSE BUTTON */
         }
 
         .calendar-wrapper.active {
             display: block;
             animation: slideIn 0.3s ease;
+        }
+
+        /* CALENDAR CLOSE BUTTON */
+        .calendar-close-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #f3f4f6;
+            border: none;
+            color: #6b7280;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            transition: all 0.2s;
+        }
+
+        .calendar-close-btn:hover {
+            background: #e5e7eb;
+            color: #0F2C3A;
+            transform: scale(1.1);
         }
 
         @keyframes slideIn {
