@@ -285,24 +285,26 @@
             position: absolute;
             top: 8px;
             right: 8px;
-            width: 32px;
-            height: 32px;
+            width: 36px;
+            height: 36px;
             border-radius: 50%;
-            background: #f3f4f6;
-            border: none;
-            color: #6b7280;
-            font-size: 20px;
+            background: white;
+            border: 1px solid #e5e7eb;
+            color: #0F2C3A;
+            font-size: 24px;
+            font-weight: 600;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            z-index: 10;
+            z-index: 100;
             transition: all 0.2s;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
 
         .calendar-close-btn:hover {
-            background: #e5e7eb;
-            color: #0F2C3A;
+            background: #f3f4f6;
+            color: #16A8EE;
             transform: scale(1.1);
         }
 
