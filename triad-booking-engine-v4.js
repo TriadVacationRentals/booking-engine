@@ -28,7 +28,7 @@ const container = document.querySelector('[data-listing-id]');
 
         document.addEventListener('DOMContentLoaded', init);
 
-        async function init() {
+        function init() {
             // Move booking widget into panel for mobile
             if (window.innerWidth <= 767) {
                 const bookingWidget = document.getElementById('bookingWidget');
@@ -68,14 +68,13 @@ const container = document.querySelector('[data-listing-id]');
             
             document.getElementById('bookingOverlay').addEventListener('click', closePanel);
             
-            // Fetch listing details FIRST to get maxGuests
-            await fetchListingDetails();
-            
-            // Then update controls with correct maxGuests
-            updateGuestControls();
-            
             loadCalendar();
+            updateGuestControls();
             fetchAveragePrice();
+            fetchListingDetails().then(() => {
+                // Update controls again after maxGuests is fetched
+                updateGuestControls();
+            });
         }
 
         function togglePanel() {
