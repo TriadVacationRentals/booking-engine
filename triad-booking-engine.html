@@ -1,0 +1,1614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Booking Widget</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f8f9fa;
+            min-height: 100vh;
+        }
+
+        /* Mobile overlay */
+        .booking-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s;
+            z-index: 199;
+        }
+
+        .booking-overlay.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* Mobile panel - starts collapsed at bottom, expands to full screen */
+        .booking-panel {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-radius: 24px 24px 0 0;
+            transform: translateY(0);
+            z-index: 200;
+            display: none; /* Hidden on desktop */
+            flex-direction: column;
+            height: auto;
+            max-height: 180px;
+            transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.1);
+        }
+
+        .booking-panel.open {
+            max-height: 90vh;
+        }
+
+        /* Panel header - clickable to toggle */
+        .panel-header {
+            padding: 20px 20px 24px;
+            cursor: pointer;
+            flex-shrink: 0;
+            position: relative;
+            -webkit-tap-highlight-color: transparent; /* Remove blue flash on tap */
+            outline: none;
+            user-select: none;
+        }
+
+        .panel-header:focus {
+            outline: none;
+        }
+
+        .panel-header:active {
+            background: none;
+        }
+
+        .booking-panel.open .panel-header {
+            cursor: default;
+        }
+
+        /* Close button - only shows when expanded */
+        .close-btn {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #f3f4f6;
+            border: none;
+            color: #6b7280;
+            font-size: 24px;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+            z-index: 10;
+        }
+
+        .booking-panel.open .close-btn {
+            display: flex;
+        }
+
+        /* Header content - always visible */
+        .header-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            text-align: center;
+        }
+
+        .reserve-text {
+            font-size: 28px;
+            font-weight: 600;
+            color: #0F2C3A;
+            letter-spacing: -0.4px;
+        }
+
+        .bottom-price {
+            display: flex;
+            align-items: baseline;
+            gap: 4px;
+            order: -1; /* Move price above */
+        }
+
+        .price-amount {
+            font-size: 15px;
+            font-weight: 600;
+            color: #6b7280;
+        }
+
+        .price-label {
+            font-size: 14px;
+            color: #9ca3af;
+        }
+
+        /* Subtitle - only shows when expanded */
+        .panel-subtitle {
+            font-size: 14px;
+            color: #6b7280;
+            text-align: center;
+            margin-top: 8px;
+        }
+
+        /* Expanded view - full widget */
+        .expanded-view {
+            display: none;
+        }
+
+        .booking-panel.open .expanded-view {
+            display: block;
+        }
+
+        .panel-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #0F2C3A;
+            margin-bottom: 20px;
+        }
+
+        /* Scrollable content */
+        .panel-scrollable {
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            flex: 1;
+            padding: 20px 20px 24px;
+            min-height: 0;
+        }
+
+        /* DESKTOP WIDGET */
+        .booking-card {
+            width: 100%;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+            padding: 28px;
+        }
+
+        .header {
+            margin-bottom: 24px;
+        }
+        
+        .price-per-night {
+            margin-bottom: 16px;
+        }
+        
+        .desktop-price-amount {
+            font-size: 28px;
+            font-weight: 700;
+            color: #0F2C3A;
+        }
+        
+        .price-label-text {
+            font-size: 18px;
+            color: #6b7280;
+            font-weight: 400;
+        }
+
+        .title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #0F2C3A;
+            margin-bottom: 6px;
+        }
+
+        .subtitle {
+            font-size: 14px;
+            color: #6b7280;
+        }
+
+        /* Date Inputs */
+        .date-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .input-box {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .input-box.disabled {
+            background: #f9fafb;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .input-box:hover {
+            border-color: #16A8EE;
+            box-shadow: 0 0 0 3px rgba(22, 168, 238, 0.1);
+        }
+        
+        .input-box.disabled:hover {
+            border-color: #e5e7eb;
+            box-shadow: none;
+        }
+
+        .input-box.active {
+            border-color: #16A8EE;
+            box-shadow: 0 0 0 3px rgba(22, 168, 238, 0.1);
+        }
+
+        .input-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        .input-display {
+            font-size: 15px;
+            font-weight: 500;
+            color: #0F2C3A;
+        }
+
+        .input-display.placeholder {
+            color: #9ca3af;
+        }
+
+        .guest-section {
+            margin-bottom: 20px;
+        }
+
+        .calendar-wrapper {
+            display: none;
+            margin: 20px -8px 20px;
+        }
+
+        .calendar-wrapper.active {
+            display: block;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .weekdays {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 2px;
+            margin-bottom: 8px;
+            padding: 0 4px;
+        }
+
+        .weekday {
+            text-align: center;
+            font-size: 10px;
+            font-weight: 600;
+            color: #9ca3af;
+            padding: 6px 0;
+        }
+
+        .days {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 2px;
+            padding: 0 4px;
+            min-height: 240px;
+            grid-template-rows: repeat(6, 1fr);
+        }
+
+        .day {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: 500;
+            color: #0F2C3A;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .day.empty {
+            visibility: hidden;
+        }
+
+        .day.unavailable {
+            color: #e5e7eb;
+            cursor: not-allowed;
+            text-decoration: line-through;
+        }
+        
+        .day.checkout-only {
+            color: #9ca3af;
+            cursor: not-allowed;
+            position: relative;
+        }
+        
+        .day.checkout-only::before {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%) translateY(-8px);
+            background: #1f2937;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s, transform 0.2s;
+            z-index: 1000;
+        }
+        
+        .day.checkout-only::after {
+            content: '';
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%) translateY(-2px);
+            border: 6px solid transparent;
+            border-top-color: #1f2937;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s, transform 0.2s;
+            z-index: 1000;
+        }
+        
+        .day.checkout-only:not(.checkout-mode):hover::before,
+        .day.checkout-only:not(.checkout-mode):hover::after {
+            opacity: 1;
+            transform: translateX(-50%) translateY(-4px);
+        }
+        
+        .day.checkout-only:not(.checkout-mode):hover::after {
+            transform: translateX(-50%) translateY(2px);
+        }
+        
+        .day.checkout-only.checkout-mode {
+            cursor: pointer;
+            color: #0F2C3A;
+            font-weight: 600;
+        }
+
+        .day.past {
+            color: #f3f4f6;
+            cursor: not-allowed;
+        }
+
+        .day.available {
+            color: #0F2C3A;
+            font-weight: 600;
+        }
+
+        .day.available:hover {
+            background: #f3f4f6;
+        }
+
+        .day.selected {
+            background: #0F2C3A;
+            color: white;
+        }
+
+        .day.in-range {
+            background: #e8f6fd;
+        }
+
+        .guest-popup {
+            display: none;
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin: 12px 0 16px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        .guest-popup.active {
+            display: block;
+            animation: slideIn 0.3s ease;
+        }
+
+        .guest-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .guest-info {
+            flex: 1;
+        }
+
+        .guest-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #0F2C3A;
+        }
+
+        .guest-desc {
+            font-size: 12px;
+            color: #9ca3af;
+            margin-top: 2px;
+        }
+
+        .guest-controls {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .guest-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 1.5px solid #d1d5db;
+            background: white;
+            color: #6b7280;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            transition: all 0.2s;
+        }
+
+        .guest-btn:hover:not(:disabled) {
+            border-color: #0F2C3A;
+            color: #0F2C3A;
+        }
+
+        .guest-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .guest-number {
+            font-size: 15px;
+            font-weight: 600;
+            color: #0F2C3A;
+            min-width: 24px;
+            text-align: center;
+        }
+
+        .price-breakdown {
+            display: none;
+            margin: 24px 0;
+            padding-top: 24px;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .price-breakdown.active {
+            display: block;
+        }
+        
+        /* Price summary - simple line with total */
+        .price-summary {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 0;
+            border-bottom: 1px solid #e5e7eb;
+            margin-bottom: 12px;
+        }
+        
+        .price-summary-label {
+            color: #0F2C3A;
+            font-size: 17px;
+            font-weight: 600;
+        }
+        
+        .price-summary-value {
+            color: #0F2C3A;
+            font-weight: 700;
+            font-size: 22px;
+            letter-spacing: -0.5px;
+        }
+        
+        /* View details button */
+        .price-details-toggle {
+            text-align: center;
+            padding: 0;
+            margin-bottom: 16px;
+        }
+        
+        .details-link {
+            color: #16A8EE;
+            text-decoration: none;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            background: none;
+            border: none;
+            padding: 8px 16px;
+            font-family: inherit;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+        
+        .details-link:hover {
+            color: #0F2C3A;
+        }
+        
+        .details-link::after {
+            content: '›';
+            font-size: 18px;
+            font-weight: 700;
+            transform: rotate(90deg);
+            display: inline-block;
+            transition: transform 0.3s;
+        }
+        
+        .details-link.expanded::after {
+            transform: rotate(-90deg);
+        }
+        
+        /* Tooltip icon for damage deposit */
+        .tooltip-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #e5e7eb;
+            color: #6b7280;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: help;
+            position: relative;
+            margin-left: 4px;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Tooltip - works on both hover (desktop) and active (mobile tap) */
+        .tooltip-icon:hover::after,
+        .tooltip-icon:active::after,
+        .tooltip-icon.show-tooltip::after {
+            content: attr(title);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%) translateY(-8px);
+            background: #1f2937;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 400;
+            white-space: nowrap;
+            z-index: 100;
+            pointer-events: none;
+        }
+
+        .tooltip-icon:hover::before,
+        .tooltip-icon:active::before,
+        .tooltip-icon.show-tooltip::before {
+            content: '';
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%) translateY(-2px);
+            border: 6px solid transparent;
+            border-top-color: #1f2937;
+            z-index: 100;
+        }
+        
+        /* Detailed breakdown - hidden by default */
+        .price-details {
+            display: none;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid #e5e7eb;
+        }
+        
+        .price-details.expanded {
+            display: block;
+        }
+
+        .price-line {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            font-size: 15px;
+        }
+
+        .price-value {
+            color: #0F2C3A;
+            font-weight: 500;
+        }
+
+        .price-value.discount {
+            color: #16A8EE;
+        }
+
+        .book-btn {
+            width: 100%;
+            padding: 16px;
+            background: #0F2C3A;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .book-btn:hover:not(:disabled) {
+            background: #16A8EE;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(22, 168, 238, 0.3);
+        }
+
+        .book-btn:disabled {
+            background: #d1d5db;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .footer-text {
+            text-align: center;
+            margin-top: 16px;
+            font-size: 13px;
+            color: #6b7280;
+            display: none;
+        }
+
+        .footer-text.active {
+            display: block;
+        }
+
+        .error {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #dc2626;
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 14px;
+            margin-bottom: 16px;
+            display: none;
+        }
+
+        .error.active {
+            display: block;
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 767px) {
+            .booking-card {
+                display: none;
+            }
+            
+            /* Hide header when inside mobile panel */
+            .booking-panel .booking-card .header {
+                display: none;
+            }
+
+            .booking-overlay,
+            .booking-panel {
+                display: flex;
+            }
+        }
+
+        @media (min-width: 768px) {
+            .booking-card {
+                /* No max-width or centering - controlled by Webflow container */
+            }
+
+            .booking-overlay,
+            .booking-panel {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div data-listing-id="318457">
+    
+    <!-- MOBILE: Overlay -->
+    <div class="booking-overlay" id="bookingOverlay"></div>
+
+    <!-- MOBILE: Panel (collapsed at bottom, expands up) -->
+    <div class="booking-panel" id="bookingPanel">
+        <div class="panel-header" id="panelHeader">
+            <button class="close-btn" id="closeBtn">×</button>
+            
+            <!-- Header - always visible -->
+            <div class="header-content">
+                <div class="bottom-price">
+                    <span class="price-amount" id="bottomPrice">--</span>
+                    <span class="price-label">/ Night</span>
+                </div>
+                <div class="reserve-text">Reserve Your Stay</div>
+            </div>
+            
+            <!-- Subtitle - only shows when expanded -->
+            <div class="expanded-view">
+                <div class="panel-subtitle">Select your dates and number of guests</div>
+            </div>
+        </div>
+        
+        <div class="panel-scrollable expanded-view" id="panelContent">
+            <!-- Booking widget will be moved here -->
+        </div>
+    </div>
+
+    <!-- DESKTOP/CONTENT: Main Booking Widget -->
+    <div class="booking-card" id="bookingWidget">
+        <div class="header">
+            <div class="price-per-night" id="pricePerNight" style="display: none;">
+                <span class="desktop-price-amount">$0</span>
+                <span class="price-label-text"> / Night</span>
+            </div>
+            <div class="title">Reserve Your Stay</div>
+            <div class="subtitle">Select your dates and number of guests</div>
+        </div>
+
+        <div class="error" id="error"></div>
+
+        <div class="date-section">
+            <div class="input-box" id="checkInBox">
+                <span class="input-label">Check-in</span>
+                <div class="input-display placeholder" id="checkInDisplay">Add date</div>
+            </div>
+            <div class="input-box" id="checkOutBox">
+                <span class="input-label">Check-out</span>
+                <div class="input-display placeholder" id="checkOutDisplay">Add date</div>
+            </div>
+        </div>
+
+        <div class="calendar-wrapper" id="calendar"></div>
+
+        <div class="guest-section">
+            <div class="input-box" id="guestBox">
+                <span class="input-label">Guests</span>
+                <div class="input-display" id="guestDisplay">1 guest</div>
+            </div>
+        </div>
+
+        <div class="guest-popup" id="guestPopup">
+            <div class="guest-row">
+                <div class="guest-info">
+                    <div class="guest-title">Guests</div>
+                    <div class="guest-desc">Maximum 12</div>
+                </div>
+                <div class="guest-controls">
+                    <button class="guest-btn" id="guestMinus">−</button>
+                    <span class="guest-number" id="guestNumber">1</span>
+                    <button class="guest-btn" id="guestPlus">+</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="price-breakdown" id="priceBreakdown"></div>
+
+        <button class="book-btn" id="bookBtn" disabled>Reserve</button>
+
+        <div class="footer-text" id="footer">You won't be charged yet</div>
+    </div>
+    
+    </div>
+
+    <script>
+        const container = document.querySelector('[data-listing-id]');
+        const listingIdFromAttribute = container?.dataset?.listingId;
+        
+        // Require listing ID - no fallback
+        if (!container || !listingIdFromAttribute) {
+            console.error('❌ FATAL ERROR: Missing data-listing-id attribute on container element');
+            document.body.innerHTML = '<div style="padding: 40px; text-align: center; font-family: sans-serif;"><h1>Configuration Error</h1><p>Missing listing ID. Please add data-listing-id attribute to the container.</p></div>';
+            throw new Error('Missing required data-listing-id attribute');
+        }
+        
+        const CONFIG = {
+            listingId: parseInt(listingIdFromAttribute),
+            workerUrl: 'https://hostaway-proxy.triad-sync.workers.dev', // Cloudflare Worker - update per environment
+            maxGuests: 12 // Default, will be updated from Hostaway API
+        };
+
+        let state = {
+            checkIn: null,
+            checkOut: null,
+            guests: 1,
+            calendarData: {},
+            currentMonth: new Date(),
+            isSelectingCheckout: false,
+            avgPricePerNight: null,
+            minNights: 2, // Default, will be updated from listing
+            refundableDamageDeposit: 0 // NEW: Store damage deposit amount
+        };
+
+        document.addEventListener('DOMContentLoaded', init);
+
+        function init() {
+            // Move booking widget into panel for mobile
+            if (window.innerWidth <= 767) {
+                const bookingWidget = document.getElementById('bookingWidget');
+                const panelContent = document.getElementById('panelContent');
+                panelContent.appendChild(bookingWidget);
+                bookingWidget.style.display = 'block';
+                bookingWidget.style.boxShadow = 'none';
+                bookingWidget.style.padding = '0';
+                bookingWidget.style.borderRadius = '0';
+            }
+            
+            // Disable checkout initially
+            document.getElementById('checkOutBox').classList.add('disabled');
+            
+            // Booking widget event listeners
+            document.getElementById('checkInBox').onclick = toggleCalendar;
+            document.getElementById('checkOutBox').onclick = function() {
+                // Only allow if check-in is selected
+                if (!this.classList.contains('disabled')) {
+                    toggleCalendar();
+                }
+            };
+            document.getElementById('guestBox').onclick = toggleGuests;
+            document.getElementById('guestMinus').onclick = () => changeGuests(-1);
+            document.getElementById('guestPlus').onclick = () => changeGuests(1);
+            document.getElementById('bookBtn').onclick = handleBook;
+            
+            // Mobile panel event listeners
+            document.getElementById('panelHeader').addEventListener('click', function(e) {
+                if (e.target.id !== 'closeBtn') togglePanel();
+            });
+            
+            document.getElementById('closeBtn').addEventListener('click', function(e) {
+                e.stopPropagation();
+                closePanel();
+            });
+            
+            document.getElementById('bookingOverlay').addEventListener('click', closePanel);
+            
+            loadCalendar();
+            updateGuestControls();
+            fetchAveragePrice();
+            fetchListingDetails();
+        }
+
+        function togglePanel() {
+            const panel = document.getElementById('bookingPanel');
+            const overlay = document.getElementById('bookingOverlay');
+            
+            if (panel.classList.contains('open')) {
+                panel.classList.remove('open');
+                overlay.classList.remove('open');
+                document.body.style.overflow = '';
+            } else {
+                panel.classList.add('open');
+                overlay.classList.add('open');
+                document.body.style.overflow = 'hidden';
+            }
+        }
+
+        function closePanel() {
+            document.getElementById('bookingPanel').classList.remove('open');
+            document.getElementById('bookingOverlay').classList.remove('open');
+            document.body.style.overflow = '';
+            
+            // Reset view - hide calendar, show inputs
+            const cal = document.getElementById('calendar');
+            const guests = document.getElementById('guestPopup');
+            const dateSection = document.querySelector('.date-section');
+            const guestSection = document.querySelector('.guest-section');
+            
+            if (cal.classList.contains('active')) {
+                cal.classList.remove('active');
+                document.getElementById('checkInBox').classList.remove('active');
+                document.getElementById('checkOutBox').classList.remove('active');
+            }
+            
+            if (guests.classList.contains('active')) {
+                guests.classList.remove('active');
+                document.getElementById('guestBox').classList.remove('active');
+            }
+            
+            // Collapse pricing details when closing panel
+            const priceDetails = document.getElementById('priceDetails');
+            const detailsLink = document.querySelector('.details-link');
+            if (priceDetails && priceDetails.classList.contains('expanded')) {
+                priceDetails.classList.remove('expanded');
+                if (detailsLink) detailsLink.classList.remove('expanded');
+            }
+            
+            // Show all sections
+            dateSection.style.display = 'grid';
+            guestSection.style.display = 'block';
+        }
+
+        async function fetchAveragePrice() {
+            console.log('🔍 Fetching average price...');
+            const start = new Date();
+            const end = new Date();
+            end.setDate(end.getDate() + 30);
+
+            try {
+                const res = await fetch(
+                    `${CONFIG.workerUrl}/api/listings/${CONFIG.listingId}/calendar?startDate=${fmt(start)}&endDate=${fmt(end)}`
+                );
+                const data = await res.json();
+                console.log('📊 Calendar data received:', data);
+                
+                let total = 0;
+                let count = 0;
+                data.result.forEach(d => {
+                    if (d.isAvailable === 1 && d.price) {
+                        total += parseFloat(d.price);
+                        count++;
+                    }
+                });
+                
+                if (count > 0) {
+                    state.avgPricePerNight = Math.round(total / count);
+                    console.log('✅ Average price calculated:', state.avgPricePerNight);
+                    updateBottomBarPrice();
+                } else {
+                    console.warn('⚠️ No available dates found for price calculation');
+                }
+            } catch (err) {
+                console.error('❌ Failed to fetch average price:', err);
+            }
+        }
+        
+        async function fetchListingDetails() {
+            console.log('🔍 Fetching listing details for ID:', CONFIG.listingId);
+            try {
+                const url = `${CONFIG.workerUrl}/api/listings/${CONFIG.listingId}`;
+                console.log('📡 API URL:', url);
+                
+                const res = await fetch(url);
+                console.log('📥 Response status:', res.status);
+                
+                const data = await res.json();
+                console.log('📦 Response data:', data);
+                
+                // Get minNights
+                if (data.result && data.result.minNights) {
+                    state.minNights = data.result.minNights;
+                    console.log('✅ minNights set to:', state.minNights);
+                } else {
+                    console.warn('⚠️ minNights not found in response, using default:', state.minNights);
+                }
+                
+                // NEW: Get refundableDamageDeposit
+                if (data.result && data.result.refundableDamageDeposit) {
+                    state.refundableDamageDeposit = parseFloat(data.result.refundableDamageDeposit);
+                    console.log('✅ refundableDamageDeposit set to:', state.refundableDamageDeposit);
+                } else {
+                    console.log('ℹ️ No refundableDamageDeposit found (this is normal for listings without damage deposit)');
+                }
+                
+                // Get maxGuests from API
+                if (data.result && data.result.maxGuests) {
+                    CONFIG.maxGuests = parseInt(data.result.maxGuests);
+                    // Update UI text
+                    const guestDescEl = document.querySelector('.guest-desc');
+                    if (guestDescEl) {
+                        guestDescEl.textContent = `Maximum ${CONFIG.maxGuests}`;
+                    }
+                    console.log('✅ maxGuests set to:', CONFIG.maxGuests);
+                } else {
+                    console.warn('⚠️ maxGuests not found in response, using default:', CONFIG.maxGuests);
+                }
+                
+                // Get base price for bottom bar - show "from $X/night"
+                if (data.result && data.result.price) {
+                    const basePrice = Math.round(parseFloat(data.result.price));
+                    console.log('✅ Base price:', basePrice);
+                    
+                    // Update bottom bar to show "from $X"
+                    const priceEl = document.getElementById('bottomPrice');
+                    if (priceEl) {
+                        priceEl.textContent = `From $${formatPrice(basePrice)}`;
+                        console.log('✅ Bottom bar updated with base price');
+                    }
+                } else {
+                    console.warn('⚠️ price not found in listing details');
+                }
+            } catch (err) {
+                console.error('❌ Failed to fetch listing details:', err);
+            }
+        }
+
+        function updateBottomBarPrice() {
+            console.log('💰 Updating bottom bar price...');
+            const priceEl = document.getElementById('bottomPrice');
+            console.log('Price element:', priceEl);
+            console.log('avgPricePerNight:', state.avgPricePerNight);
+            
+            if (priceEl) {
+                if (state.avgPricePerNight) {
+                    const formattedPrice = `$${formatPrice(state.avgPricePerNight)}`;
+                    console.log('✅ Setting price to:', formattedPrice);
+                    priceEl.textContent = formattedPrice;
+                } else {
+                    console.log('⚠️ No avgPricePerNight, trying fallback...');
+                    // Fallback: try to get price from desktop display
+                    const desktopPrice = document.getElementById('pricePerNight');
+                    if (desktopPrice && desktopPrice.querySelector('.desktop-price-amount')) {
+                        const price = desktopPrice.querySelector('.desktop-price-amount').textContent;
+                        console.log('✅ Using fallback price:', price);
+                        priceEl.textContent = price;
+                    } else {
+                        console.log('❌ No fallback price available');
+                    }
+                }
+            } else {
+                console.error('❌ Price element not found!');
+            }
+        }
+
+        function toggleCalendar() {
+            const cal = document.getElementById('calendar');
+            const guests = document.getElementById('guestPopup');
+            const dateSection = document.querySelector('.date-section');
+            const guestSection = document.querySelector('.guest-section');
+            
+            guests.classList.remove('active');
+            document.getElementById('guestBox').classList.remove('active');
+            
+            if (cal.classList.contains('active')) {
+                cal.classList.remove('active');
+                document.getElementById('checkInBox').classList.remove('active');
+                document.getElementById('checkOutBox').classList.remove('active');
+                
+                // Show date and guest sections
+                dateSection.style.display = 'grid';
+                guestSection.style.display = 'block';
+            } else {
+                cal.classList.add('active');
+                document.getElementById('checkInBox').classList.add('active');
+                document.getElementById('checkOutBox').classList.add('active');
+                
+                // Hide date and guest sections
+                dateSection.style.display = 'none';
+                guestSection.style.display = 'none';
+                
+                state.isSelectingCheckout = false;
+                loadCalendar();
+            }
+        }
+
+        function toggleGuests() {
+            const cal = document.getElementById('calendar');
+            const guests = document.getElementById('guestPopup');
+            const box = document.getElementById('guestBox');
+            const dateSection = document.querySelector('.date-section');
+            
+            cal.classList.remove('active');
+            document.getElementById('checkInBox').classList.remove('active');
+            document.getElementById('checkOutBox').classList.remove('active');
+            
+            if (guests.classList.contains('active')) {
+                guests.classList.remove('active');
+                box.classList.remove('active');
+            } else {
+                guests.classList.add('active');
+                box.classList.add('active');
+            }
+        }
+
+        async function loadCalendar() {
+            const month = new Date(state.currentMonth);
+            
+            // Load current month
+            await fetchMonth(month);
+            
+            // ALSO load next month to prevent availability issues at month boundaries
+            const nextMonth = new Date(month.getFullYear(), month.getMonth() + 1, 1);
+            await fetchMonth(nextMonth);
+            
+            renderCalendar();
+        }
+
+        async function fetchMonth(date) {
+            const start = new Date(date.getFullYear(), date.getMonth(), 1);
+            const end = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+
+            try {
+                const res = await fetch(
+                    `${CONFIG.workerUrl}/api/listings/${CONFIG.listingId}/calendar?startDate=${fmt(start)}&endDate=${fmt(end)}`
+                );
+                const data = await res.json();
+                data.result.forEach(d => state.calendarData[d.date] = d);
+            } catch (err) {
+                showError('Failed to load calendar');
+            }
+        }
+
+        function renderCalendar() {
+            const month = new Date(state.currentMonth);
+            const monthName = month.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+            const viewTitle = state.isSelectingCheckout ? 'Select check-out date' : 'Select check-in date';
+            const titleColor = state.isSelectingCheckout ? '#16A8EE' : '#0F2C3A';
+            
+            document.getElementById('calendar').innerHTML = `
+                <div style="margin-bottom: 20px;">
+                    <div style="font-size: 16px; font-weight: 600; color: ${titleColor}; text-align: center; margin-bottom: 16px; padding: 12px; background: ${state.isSelectingCheckout ? '#e8f6fd' : '#f3f4f6'}; border-radius: 8px;">${viewTitle}</div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                        <button onclick="changeMonth(-1)" style="width: 32px; height: 32px; border: 1px solid #e5e7eb; background: white; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center;">←</button>
+                        <div style="font-size: 16px; font-weight: 600; color: #0F2C3A;">${monthName}</div>
+                        <button onclick="changeMonth(1)" style="width: 32px; height: 32px; border: 1px solid #e5e7eb; background: white; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center;">→</button>
+                    </div>
+                </div>
+                <div class="calendar-container">
+                    ${renderMonth(month)}
+                </div>
+                <div style="text-align: right; margin-top: 16px; padding-top: 16px; border-top: 1px solid #e5e7eb;">
+                    <button id="clearDatesBtn" onclick="clearDates()" style="background: none; border: none; color: #9ca3af; font-size: 14px; font-weight: 500; cursor: not-allowed; padding: 8px 16px; border-radius: 8px; transition: all 0.2s;" disabled>Clear dates</button>
+                </div>
+            `;
+
+            attachDayListeners();
+            updateClearButton();
+        }
+        
+        function changeMonth(delta) {
+            state.currentMonth.setMonth(state.currentMonth.getMonth() + delta);
+            loadCalendar();
+        }
+        
+        function clearDates() {
+            state.checkIn = null;
+            state.checkOut = null;
+            state.isSelectingCheckout = false;
+            
+            // Disable checkout box again
+            document.getElementById('checkOutBox').classList.add('disabled');
+            
+            updateDateDisplay();
+            loadCalendar();
+        }
+        
+        function updateClearButton() {
+            const btn = document.getElementById('clearDatesBtn');
+            if (btn) {
+                if (state.checkIn || state.checkOut) {
+                    btn.disabled = false;
+                    btn.style.cursor = 'pointer';
+                    btn.style.color = '#16A8EE';
+                } else {
+                    btn.disabled = true;
+                    btn.style.cursor = 'not-allowed';
+                    btn.style.color = '#9ca3af';
+                }
+            }
+        }
+
+        function attachDayListeners() {
+            if (state.isSelectingCheckout) {
+                document.querySelectorAll('.day.available, .day.checkout-only.checkout-mode').forEach(el => {
+                    el.onclick = (e) => {
+                        e.stopPropagation();
+                        selectDate(el.dataset.date);
+                    };
+                });
+            } else {
+                document.querySelectorAll('.day.available').forEach(el => {
+                    el.onclick = (e) => {
+                        e.stopPropagation();
+                        selectDate(el.dataset.date);
+                    };
+                });
+            }
+        }
+
+        function renderMonth(date) {
+            const year = date.getFullYear();
+            const month = date.getMonth();
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            
+            let html = '<div class="month">';
+            html += '<div class="weekdays">';
+            ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].forEach(d => {
+                html += `<div class="weekday">${d}</div>`;
+            });
+            html += '</div><div class="days">';
+            
+            for (let i = 0; i < firstDay; i++) {
+                html += '<div class="day empty"></div>';
+            }
+            
+            const today = new Date();
+            const todayStr = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
+            
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateStr = `${year}-${pad(month + 1)}-${pad(day)}`;
+                const dayData = state.calendarData[dateStr];
+                const isPast = dateStr < todayStr;
+                const isAvail = dayData && dayData.isAvailable === 1 && !isPast;
+                
+                let cls = 'day';
+                let tooltip = '';
+                
+                // CHECKOUT MODE: Check if date meets minimum nights requirement
+                if (state.isSelectingCheckout && state.checkIn) {
+                    const nights = Math.round((new Date(dateStr) - new Date(state.checkIn)) / 86400000);
+                    
+                    if (nights < state.minNights) {
+                        // Less than minimum nights - use checkout-only class
+                        cls += ' checkout-only';
+                        tooltip = `Minimum ${state.minNights} nights required`;
+                    } else if (isAvail) {
+                        // Meets minimum nights AND available - show as blue
+                        cls += ' checkout-only checkout-mode';
+                    } else {
+                        // Meets minimum nights but not available
+                        cls += ' unavailable';
+                    }
+                } else if (isAvail) {
+                    // CHECK-IN MODE: Check if there are enough nights available after this date
+                    let consecutiveNights = 0;
+                    for (let i = 0; i < 30; i++) { // Check up to 30 days ahead
+                        const futureDate = new Date(dateStr);
+                        futureDate.setDate(futureDate.getDate() + i);
+                        const futureDateStr = fmt(futureDate);
+                        const futureDayData = state.calendarData[futureDateStr];
+                        if (futureDayData && futureDayData.isAvailable === 1) {
+                            consecutiveNights++;
+                        } else {
+                            break;
+                        }
+                    }
+                    
+                    // If not enough consecutive nights to meet minimum, it's checkout-only
+                    if (consecutiveNights < state.minNights) {
+                        cls += ' checkout-only';
+                        tooltip = `Minimum ${state.minNights} nights required`;
+                    } else {
+                        cls += ' available';
+                    }
+                } else if (isPast) {
+                    cls += ' past';
+                } else {
+                    const prevDate = new Date(dateStr);
+                    prevDate.setDate(prevDate.getDate() - 1);
+                    const prevDateStr = fmt(prevDate);
+                    const prevDayData = state.calendarData[prevDateStr];
+                    const prevWasAvailable = prevDayData && prevDayData.isAvailable === 1;
+                    
+                    if (prevWasAvailable) {
+                        cls += ' checkout-only';
+                        tooltip = 'Check-in unavailable';
+                    } else {
+                        cls += ' unavailable';
+                    }
+                }
+                
+                if (state.checkIn === dateStr || state.checkOut === dateStr) {
+                    cls += ' selected';
+                } else if (state.checkIn && state.checkOut && dateStr > state.checkIn && dateStr < state.checkOut) {
+                    cls += ' in-range';
+                }
+                
+                const tooltipAttr = tooltip ? `data-tooltip="${tooltip}"` : '';
+                html += `<div class="day ${cls}" data-date="${dateStr}" ${tooltipAttr}>${day}</div>`;
+            }
+            
+            html += '</div></div>';
+            return html;
+        }
+
+        function selectDate(dateStr) {
+            const dayData = state.calendarData[dateStr];
+            const isAvailableForCheckin = dayData && dayData.isAvailable === 1;
+            
+            if (!state.isSelectingCheckout) {
+                if (!isAvailableForCheckin) {
+                    showError('This date is not available for check-in');
+                    return;
+                }
+                state.checkIn = dateStr;
+                state.checkOut = null;
+                
+                // Enable checkout box
+                document.getElementById('checkOutBox').classList.remove('disabled');
+                
+                state.isSelectingCheckout = true;
+                updateDateDisplay();
+                renderCalendar();
+            } else {
+                if (dateStr <= state.checkIn) {
+                    showError('Check-out must be after check-in');
+                    return;
+                }
+                
+                const nights = Math.round((new Date(dateStr) - new Date(state.checkIn)) / 86400000);
+                const minNights = state.minNights; // Use listing's minNights
+                if (nights < minNights) {
+                    showError(`Minimum stay is ${minNights} nights`);
+                    return;
+                }
+                
+                let allAvailable = true;
+                const checkIn = new Date(state.checkIn);
+                const checkOut = new Date(dateStr);
+                
+                for (let d = new Date(checkIn); d < checkOut; d.setDate(d.getDate() + 1)) {
+                    const checkDateStr = fmt(d);
+                    const checkDayData = state.calendarData[checkDateStr];
+                    
+                    if (!checkDayData || checkDayData.isAvailable !== 1) {
+                        allAvailable = false;
+                        break;
+                    }
+                }
+                
+                if (!allAvailable) {
+                    showError('Some nights in this range are not available');
+                    return;
+                }
+                
+                state.checkOut = dateStr;
+                state.isSelectingCheckout = false;
+                updateDateDisplay();
+                toggleCalendar();
+                calculatePrice();
+            }
+        }
+
+        function updateDateDisplay() {
+            const checkInEl = document.getElementById('checkInDisplay');
+            const checkOutEl = document.getElementById('checkOutDisplay');
+            
+            if (state.checkIn) {
+                const d = new Date(state.checkIn);
+                checkInEl.textContent = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                checkInEl.classList.remove('placeholder');
+            } else {
+                checkInEl.textContent = 'Add date';
+                checkInEl.classList.add('placeholder');
+            }
+            
+            if (state.checkOut) {
+                const d = new Date(state.checkOut);
+                checkOutEl.textContent = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                checkOutEl.classList.remove('placeholder');
+            } else {
+                checkOutEl.textContent = 'Add date';
+                checkOutEl.classList.add('placeholder');
+            }
+        }
+
+        function changeGuests(delta) {
+            state.guests = Math.max(1, Math.min(CONFIG.maxGuests, state.guests + delta));
+            updateGuestControls();
+            
+            if (state.checkIn && state.checkOut) {
+                calculatePrice();
+            }
+        }
+
+        function updateGuestControls() {
+            const text = state.guests === 1 ? '1 guest' : `${state.guests} guests`;
+            document.getElementById('guestDisplay').textContent = text;
+            document.getElementById('guestNumber').textContent = state.guests;
+            document.getElementById('guestMinus').disabled = state.guests <= 1;
+            document.getElementById('guestPlus').disabled = state.guests >= CONFIG.maxGuests;
+        }
+
+        async function calculatePrice() {
+            if (!state.checkIn || !state.checkOut) return;
+            
+            const btn = document.getElementById('bookBtn');
+            btn.textContent = 'Calculating...';
+            btn.disabled = true;
+            
+            try {
+                const res = await fetch(
+                    `${CONFIG.workerUrl}/api/listings/${CONFIG.listingId}/calendar/priceDetails`,
+                    {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            startingDate: state.checkIn,
+                            endingDate: state.checkOut,
+                            numberOfGuests: state.guests,
+                            version: 2
+                        })
+                    }
+                );
+                
+                const data = await res.json();
+                displayPrice(data.result);
+                document.getElementById('footer').classList.add('active');
+                
+                // Enable the Reserve button
+                btn.textContent = 'Reserve';
+                btn.disabled = false;
+            } catch (err) {
+                showError('Failed to calculate price');
+                btn.textContent = 'Reserve';
+                btn.disabled = true;
+            }
+        }
+
+        function displayPrice(data) {
+            const { totalPrice, components } = data;
+            const nights = Math.round((new Date(state.checkOut) - new Date(state.checkIn)) / 86400000);
+            
+            const avgPerNight = Math.round(totalPrice / nights);
+            const pricePerNightEl = document.getElementById('pricePerNight');
+            pricePerNightEl.querySelector('.desktop-price-amount').textContent = `$${formatPrice(avgPerNight)}`;
+            pricePerNightEl.style.display = 'block';
+            
+            // Build detailed breakdown - just display what Hostaway returns
+            let detailsHtml = '';
+            components.forEach(c => {
+                if (c.isDeleted === 0 && c.isIncludedInTotalPrice === 1) {
+                    let label = c.title;
+                    
+                    if (c.name === 'baseRate') {
+                        const perNight = Math.round(c.total / nights);
+                        label = `$${formatPrice(perNight)} x ${nights} nights`;
+                    }
+                    
+                    const val = Math.round(c.total);
+                    const discount = c.total < 0;
+                    
+                    detailsHtml += `
+                        <div class="price-line">
+                            <span class="price-label">${label}</span>
+                            <span class="price-value ${discount ? 'discount' : ''}">${discount ? '-' : ''}$${formatPrice(Math.abs(val))}</span>
+                        </div>
+                    `;
+                }
+            });
+            
+            // Add damage deposit at the bottom of the breakdown if it exists
+            if (state.refundableDamageDeposit > 0) {
+                detailsHtml += `
+                    <div class="price-line">
+                        <span class="price-label">
+                            Refundable Damage Deposit
+                            <span class="tooltip-icon" title="Either charged at the property or by a credit card hold">?</span>
+                        </span>
+                        <span class="price-value">$${formatPrice(state.refundableDamageDeposit)}</span>
+                    </div>
+                `;
+            }
+            
+            // Add discount coupon notice at the bottom
+            detailsHtml += `
+                <div class="price-line" style="margin-top: 8px; padding-top: 16px; border-top: 1px solid #e5e7eb;">
+                    <span class="price-label" style="color: #9ca3af; font-size: 13px; font-style: italic;">
+                        Discount coupons can be applied during checkout
+                    </span>
+                </div>
+            `;
+            
+            // Build full HTML with summary and collapsible details
+            const html = `
+                <div class="price-summary">
+                    <span class="price-summary-label">Total</span>
+                    <span class="price-summary-value">$${formatPrice(totalPrice)}</span>
+                </div>
+                <div class="price-details-toggle">
+                    <button class="details-link" onclick="togglePriceDetails()">Pricing details</button>
+                </div>
+                <div class="price-details" id="priceDetails">
+                    ${detailsHtml}
+                </div>
+            `;
+            
+            const el = document.getElementById('priceBreakdown');
+            el.innerHTML = html;
+            el.classList.add('active');
+        }
+        
+        function togglePriceDetails() {
+            const details = document.getElementById('priceDetails');
+            const link = document.querySelector('.details-link');
+            
+            if (details.classList.contains('expanded')) {
+                details.classList.remove('expanded');
+                link.classList.remove('expanded');
+            } else {
+                details.classList.add('expanded');
+                link.classList.add('expanded');
+            }
+        }
+        
+        // Handle tooltip on mobile tap
+        document.addEventListener('click', function(e) {
+            // If clicking on tooltip icon
+            if (e.target.classList.contains('tooltip-icon')) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // Toggle tooltip
+                if (e.target.classList.contains('show-tooltip')) {
+                    e.target.classList.remove('show-tooltip');
+                } else {
+                    // Remove all other tooltips first
+                    document.querySelectorAll('.tooltip-icon.show-tooltip').forEach(t => {
+                        t.classList.remove('show-tooltip');
+                    });
+                    e.target.classList.add('show-tooltip');
+                    
+                    // Auto-hide after 3 seconds
+                    setTimeout(() => {
+                        e.target.classList.remove('show-tooltip');
+                    }, 3000);
+                }
+            } else {
+                // Close all tooltips when clicking elsewhere
+                document.querySelectorAll('.tooltip-icon.show-tooltip').forEach(t => {
+                    t.classList.remove('show-tooltip');
+                });
+            }
+        });
+
+        function handleBook() {
+            if (!state.checkIn || !state.checkOut) {
+                showError('Please select check-in and check-out dates');
+                return;
+            }
+            
+            // Redirect to Hostaway Booking Engine
+            const checkInDate = state.checkIn;
+            const checkOutDate = state.checkOut;
+            const guests = state.guests;
+            
+            // Hostaway booking engine URL format: /checkout/{listingId}?start=...&end=...&numberOfGuests=...
+            // Update base URL (properties.triadvacationrentals.com) per environment if needed
+            const hostawayUrl = `https://properties.triadvacationrentals.com/checkout/${CONFIG.listingId}?start=${checkInDate}&end=${checkOutDate}&numberOfGuests=${guests}`;
+            
+            console.log('🚀 Redirecting to Hostaway checkout:', hostawayUrl);
+            
+            // Redirect to Hostaway
+            window.location.href = hostawayUrl;
+        }
+
+        function showError(msg) {
+            const el = document.getElementById('error');
+            el.textContent = msg;
+            el.classList.add('active');
+            setTimeout(() => el.classList.remove('active'), 5000);
+        }
+
+        function fmt(d) {
+            return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+        }
+
+        function pad(n) {
+            return String(n).padStart(2, '0');
+        }
+        
+        function formatPrice(num) {
+            return Math.round(num).toLocaleString('en-US');
+        }
+    </script>
+</body>
+</html>
