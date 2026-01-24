@@ -172,6 +172,41 @@
             border-radius: 30px;
             box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
             padding: 28px;
+            position: relative;
+        }
+        
+        /* CALENDAR CLOSE BUTTON - in widget header */
+        .widget-close-btn {
+            position: absolute;
+            top: 28px;
+            right: 28px;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: white;
+            border: 1px solid #e5e7eb;
+            color: #0F2C3A;
+            font-size: 24px;
+            font-weight: 600;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            transition: all 0.2s;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .widget-close-btn:hover {
+            background: #f3f4f6;
+            color: #16A8EE;
+            transform: scale(1.1);
+        }
+        
+        /* Show button only when calendar is active */
+        .calendar-wrapper.active ~ * .widget-close-btn,
+        .booking-card:has(.calendar-wrapper.active) .widget-close-btn {
+            display: flex;
         }
 
         .header {
