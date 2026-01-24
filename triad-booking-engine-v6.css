@@ -106,6 +106,13 @@
         .booking-card:has(.calendar-wrapper.active) .close-btn {
             display: flex;
         }
+        
+        /* Hide desktop close button on mobile (mobile has its own in panel header) */
+        @media (max-width: 767px) {
+            .booking-card .close-btn {
+                display: none !important;
+            }
+        }
 
         /* Header content - always visible */
         .header-content {
