@@ -193,9 +193,9 @@ const container = document.querySelector('[data-listing-id]');
                     console.log('ℹ️ No refundableDamageDeposit found (this is normal for listings without damage deposit)');
                 }
                 
-                // Get maxGuests from API
-                if (data.result && data.result.maxGuests) {
-                    CONFIG.maxGuests = parseInt(data.result.maxGuests);
+                // Get maxGuests from API (field is called personCapacity)
+                if (data.result && data.result.personCapacity) {
+                    CONFIG.maxGuests = parseInt(data.result.personCapacity);
                     // Update UI text
                     const guestDescEl = document.querySelector('.guest-desc');
                     if (guestDescEl) {
