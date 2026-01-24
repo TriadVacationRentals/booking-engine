@@ -1,4 +1,4 @@
-        const container = document.querySelector('[data-listing-id]');
+const container = document.querySelector('[data-listing-id]');
         const listingIdFromAttribute = container?.dataset?.listingId;
         
         // Require listing ID - no fallback
@@ -125,10 +125,10 @@
         }
 
         async function fetchAveragePrice() {
-            console.log('🔍 Fetching average price...');
+            console.log('🔍 Fetching average price from calendar (90 days)...');
             const start = new Date();
             const end = new Date();
-            end.setDate(end.getDate() + 30);
+            end.setDate(end.getDate() + 90); // Look ahead 90 days
 
             try {
                 const res = await fetch(
@@ -146,15 +146,19 @@
                     }
                 });
                 
+                console.log(`📊 Found ${count} available nights in next 90 days`);
+                
                 if (count > 0) {
                     state.avgPricePerNight = Math.round(total / count);
                     console.log('✅ Average price calculated:', state.avgPricePerNight);
                     updateBottomBarPrice();
                 } else {
-                    console.warn('⚠️ No available dates found for price calculation');
+                    console.warn('⚠️ No available dates found in next 90 days - hiding price');
+                    hideBottomBarPrice();
                 }
             } catch (err) {
                 console.error('❌ Failed to fetch average price:', err);
+                hideBottomBarPrice();
             }
         }
         
@@ -199,20 +203,8 @@
                     console.warn('⚠️ maxGuests not found in response, using default:', CONFIG.maxGuests);
                 }
                 
-                // Get base price for bottom bar - show "from $X/night"
-                if (data.result && data.result.price) {
-                    const basePrice = Math.round(parseFloat(data.result.price));
-                    console.log('✅ Base price:', basePrice);
-                    
-                    // Update bottom bar to show "from $X"
-                    const priceEl = document.getElementById('bottomPrice');
-                    if (priceEl) {
-                        priceEl.textContent = `From $${formatPrice(basePrice)}`;
-                        console.log('✅ Bottom bar updated with base price');
-                    }
-                } else {
-                    console.warn('⚠️ price not found in listing details');
-                }
+                // Note: We don't use listing.price as it's often inaccurate
+                // Average price from calendar is fetched separately and is more reliable
             } catch (err) {
                 console.error('❌ Failed to fetch listing details:', err);
             }
@@ -226,23 +218,36 @@
             
             if (priceEl) {
                 if (state.avgPricePerNight) {
-                    const formattedPrice = `$${formatPrice(state.avgPricePerNight)}`;
+                    const formattedPrice = `Avg. $${formatPrice(state.avgPricePerNight)}`;
                     console.log('✅ Setting price to:', formattedPrice);
                     priceEl.textContent = formattedPrice;
-                } else {
-                    console.log('⚠️ No avgPricePerNight, trying fallback...');
-                    // Fallback: try to get price from desktop display
-                    const desktopPrice = document.getElementById('pricePerNight');
-                    if (desktopPrice && desktopPrice.querySelector('.desktop-price-amount')) {
-                        const price = desktopPrice.querySelector('.desktop-price-amount').textContent;
-                        console.log('✅ Using fallback price:', price);
-                        priceEl.textContent = price;
-                    } else {
-                        console.log('❌ No fallback price available');
+                    
+                    // Show the price element (mobile bottom bar)
+                    const bottomPriceContainer = priceEl.closest('.bottom-price');
+                    if (bottomPriceContainer) {
+                        bottomPriceContainer.style.display = 'flex';
                     }
+                } else {
+                    console.log('⚠️ No avgPricePerNight available');
                 }
-            } else {
-                console.error('❌ Price element not found!');
+            }
+        }
+        
+        function hideBottomBarPrice() {
+            console.log('🚫 Hiding bottom bar price (no availability)');
+            const priceEl = document.getElementById('bottomPrice');
+            if (priceEl) {
+                // Hide the entire price container on mobile
+                const bottomPriceContainer = priceEl.closest('.bottom-price');
+                if (bottomPriceContainer) {
+                    bottomPriceContainer.style.display = 'none';
+                }
+            }
+            
+            // Also hide desktop price per night
+            const desktopPriceEl = document.getElementById('pricePerNight');
+            if (desktopPriceEl) {
+                desktopPriceEl.style.display = 'none';
             }
         }
 
