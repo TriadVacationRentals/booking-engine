@@ -97,6 +97,15 @@
         .booking-panel.open .close-btn {
             display: flex;
         }
+        
+        /* Desktop: Show close button when calendar is active */
+        .booking-card .close-btn {
+            display: none;
+        }
+        
+        .booking-card:has(.calendar-wrapper.active) .close-btn {
+            display: flex;
+        }
 
         /* Header content - always visible */
         .header-content {
