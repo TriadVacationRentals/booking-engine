@@ -307,6 +307,20 @@
             color: #16A8EE;
             transform: scale(1.1);
         }
+        
+        /* Show close button in widget header when calendar is active */
+        .booking-card {
+            position: relative;
+        }
+        
+        .widget-close-btn {
+            display: none !important;
+        }
+        
+        .calendar-wrapper.active ~ .widget-close-btn,
+        .booking-card:has(.calendar-wrapper.active) .widget-close-btn {
+            display: flex !important;
+        }
 
         @keyframes slideIn {
             from {
