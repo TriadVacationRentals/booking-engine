@@ -180,27 +180,25 @@
             position: absolute;
             top: 28px;
             right: 28px;
-            width: 36px;
-            height: 36px;
+            width: 32px;
+            height: 32px;
             border-radius: 50%;
-            background: white;
-            border: 1px solid #e5e7eb;
-            color: #0F2C3A;
+            background: #f3f4f6;
+            border: none;
+            color: #6b7280;
             font-size: 24px;
-            font-weight: 600;
+            line-height: 1;
             cursor: pointer;
             display: none;
             align-items: center;
             justify-content: center;
-            z-index: 100;
+            z-index: 10;
             transition: all 0.2s;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
 
         .widget-close-btn:hover {
-            background: #f3f4f6;
-            color: #16A8EE;
-            transform: scale(1.1);
+            background: #e5e7eb;
+            color: #0F2C3A;
         }
         
         /* Show button only when calendar is active */
