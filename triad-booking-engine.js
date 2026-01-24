@@ -336,6 +336,7 @@ const container = document.querySelector('[data-listing-id]');
             const titleColor = state.isSelectingCheckout ? '#16A8EE' : '#0F2C3A';
             
             document.getElementById('calendar').innerHTML = `
+                <button class="calendar-close-btn" onclick="closeCalendar()">×</button>
                 <div style="margin-bottom: 20px;">
                     <div style="font-size: 16px; font-weight: 600; color: ${titleColor}; text-align: center; margin-bottom: 16px; padding: 12px; background: ${state.isSelectingCheckout ? '#e8f6fd' : '#f3f4f6'}; border-radius: 8px;">${viewTitle}</div>
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
@@ -779,6 +780,30 @@ const container = document.querySelector('[data-listing-id]');
             el.textContent = msg;
             el.classList.add('active');
             setTimeout(() => el.classList.remove('active'), 5000);
+        }
+
+        // NEW: Close calendar function for X button
+        function closeCalendar() {
+            const cal = document.getElementById('calendar');
+            const checkInBox = document.getElementById('checkInBox');
+            const checkOutBox = document.getElementById('checkOutBox');
+            
+            if (cal) {
+                cal.classList.remove('active');
+            }
+            
+            if (checkInBox) {
+                checkInBox.classList.remove('active');
+            }
+            if (checkOutBox) {
+                checkOutBox.classList.remove('active');
+            }
+            
+            // Show date and guest sections again
+            const dateSection = document.querySelector('.date-section');
+            const guestSection = document.querySelector('.guest-section');
+            if (dateSection) dateSection.style.display = 'grid';
+            if (guestSection) guestSection.style.display = 'block';
         }
 
         function fmt(d) {
