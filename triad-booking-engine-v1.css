@@ -839,6 +839,9 @@
     padding: 20px;
     max-width: 300px;
     line-height: 1.5;
+    opacity: 1 !important; /* FULL OPACITY for message */
+    position: relative;
+    z-index: 1001;
 }
 
 /* Mobile adjustments */
