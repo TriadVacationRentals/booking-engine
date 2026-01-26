@@ -817,82 +817,33 @@
             }
         }
 
-/* NOT BOOKABLE OVERLAY - Option B */
+/* NOT BOOKABLE OVERLAY - Simple Text */
 #notBookableOverlay {
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(255, 255, 255, 0.97);
-    backdrop-filter: blur(8px);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 1000;
-    border-radius: 30px;
-    padding: 40px 20px;
-}
-
-.not-bookable-content {
-    text-align: center;
-    max-width: 320px;
-}
-
-.not-bookable-icon {
-    font-size: 64px;
-    margin-bottom: 20px;
-    opacity: 0.3;
-}
-
-.not-bookable-title {
-    font-size: 22px;
-    font-weight: 700;
-    color: #0F2C3A;
-    margin-bottom: 12px;
-    line-height: 1.3;
+    pointer-events: none;
 }
 
 .not-bookable-message {
-    font-size: 15px;
-    color: #6b7280;
-    line-height: 1.6;
-    margin-bottom: 24px;
-}
-
-.not-bookable-btn {
-    display: inline-block;
-    padding: 14px 32px;
-    background: #0F2C3A;
-    color: white;
-    text-decoration: none;
-    border-radius: 12px;
-    font-size: 16px;
+    font-size: 18px;
     font-weight: 600;
-    transition: all 0.2s;
-}
-
-.not-bookable-btn:hover {
-    background: #16A8EE;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(22, 168, 238, 0.3);
+    color: #0F2C3A;
+    text-align: center;
+    padding: 20px;
+    max-width: 300px;
+    line-height: 1.5;
 }
 
 /* Mobile adjustments */
 @media (max-width: 767px) {
-    #notBookableOverlay {
-        border-radius: 0;
-    }
-    
-    .not-bookable-icon {
-        font-size: 48px;
-    }
-    
-    .not-bookable-title {
-        font-size: 20px;
-    }
-    
     .not-bookable-message {
-        font-size: 14px;
+        font-size: 16px;
     }
 }
