@@ -87,21 +87,18 @@ function showNotBookableOverlay() {
     
     const bookingWidget = document.getElementById('bookingWidget');
     
+    // Grey out the widget
+    bookingWidget.style.opacity = '0.2';
+    bookingWidget.style.pointerEvents = 'none';
+    
+    // Create simple text overlay
     const overlay = document.createElement('div');
     overlay.id = 'notBookableOverlay';
     overlay.innerHTML = `
-        <div class="not-bookable-content">
-            <div class="not-bookable-icon">📅</div>
-            <div class="not-bookable-title">Instant Booking Unavailable</div>
-            <div class="not-bookable-message">This property is not available for instant booking at the moment. Please contact us to inquire about availability.</div>
-            <a href="/contact" class="not-bookable-btn">Contact Us</a>
-        </div>
+        <div class="not-bookable-message">This property is not available at the moment.</div>
     `;
     
     bookingWidget.appendChild(overlay);
-    
-    bookingWidget.style.pointerEvents = 'none';
-    overlay.style.pointerEvents = 'auto';
 }
 
 function togglePanel() {
