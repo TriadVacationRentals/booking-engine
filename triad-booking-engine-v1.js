@@ -87,11 +87,13 @@ function showNotBookableOverlay() {
     
     const bookingWidget = document.getElementById('bookingWidget');
     
-    // Grey out the widget
-    bookingWidget.style.opacity = '0.2';
-    bookingWidget.style.pointerEvents = 'none';
+    // Grey out ALL children of the widget FIRST
+    Array.from(bookingWidget.children).forEach(child => {
+        child.style.opacity = '0.2';
+        child.style.pointerEvents = 'none';
+    });
     
-    // Create simple text overlay
+    // Create overlay AFTER (so it's not affected by opacity)
     const overlay = document.createElement('div');
     overlay.id = 'notBookableOverlay';
     overlay.innerHTML = `
