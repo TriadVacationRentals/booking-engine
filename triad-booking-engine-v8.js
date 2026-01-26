@@ -15,7 +15,7 @@ const CONFIG = {
     listingId: parseInt(listingIdFromAttribute),
     workerUrl: 'https://hostaway-proxy.triad-sync.workers.dev',
     maxGuests: 12,
-    isBookingActive: isBookingActive === 'true' || isBookingActive === '1' // NEW: Store booking status
+    isBookingActive: isBookingActive === 'true' || isBookingActive === '1'
 };
 
 let state = {
@@ -36,10 +36,9 @@ function init() {
     // NEW: Check if booking is disabled - show overlay and stop
     if (!CONFIG.isBookingActive) {
         showNotBookableOverlay();
-        return; // Stop initialization
+        return;
     }
     
-    // EVERYTHING BELOW IS UNCHANGED
     if (window.innerWidth <= 767) {
         const bookingWidget = document.getElementById('bookingWidget');
         const panelContent = document.getElementById('panelContent');
@@ -105,7 +104,6 @@ function showNotBookableOverlay() {
     overlay.style.pointerEvents = 'auto';
 }
 
-// ALL CODE BELOW IS COMPLETELY UNCHANGED
 function togglePanel() {
     const panel = document.getElementById('bookingPanel');
     const overlay = document.getElementById('bookingOverlay');
@@ -448,16 +446,25 @@ function renderMonth(date) {
         let cls = 'day';
         let tooltip = '';
         
+        // FIXED: Checkout mode logic
         if (state.isSelectingCheckout && state.checkIn) {
             const nights = Math.round((new Date(dateStr) - new Date(state.checkIn)) / 86400000);
             
             if (nights < state.minNights) {
                 cls += ' checkout-only';
                 tooltip = `Minimum ${state.minNights} nights required`;
-            } else if (isAvail) {
-                cls += ' checkout-only checkout-mode';
             } else {
-                cls += ' unavailable';
+                // Check if the NIGHT BEFORE checkout is available (not checkout day itself)
+                const lastNightDate = new Date(dateStr);
+                lastNightDate.setDate(lastNightDate.getDate() - 1);
+                const lastNightStr = fmt(lastNightDate);
+                const lastNightData = state.calendarData[lastNightStr];
+                
+                if (lastNightData && lastNightData.isAvailable === 1) {
+                    cls += ' checkout-only checkout-mode';
+                } else {
+                    cls += ' unavailable';
+                }
             }
         } else if (isAvail) {
             let consecutiveNights = 0;
