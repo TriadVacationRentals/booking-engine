@@ -377,6 +377,9 @@ function clearDates() {
     
     document.getElementById('checkOutBox').classList.add('disabled');
     
+    // Restore price range on mobile when dates are cleared
+    updateBottomBarPrice();
+    
     updateDateDisplay();
     loadCalendar();
 }
@@ -667,9 +670,17 @@ function displayPrice(data) {
     const nights = Math.round((parseLocalDate(state.checkOut) - parseLocalDate(state.checkIn)) / 86400000);
     
     const avgPerNight = Math.round(totalPrice / nights);
+    
+    // Update DESKTOP price
     const pricePerNightEl = document.getElementById('pricePerNight');
     pricePerNightEl.querySelector('.desktop-price-amount').textContent = `$${formatPrice(avgPerNight)}`;
     pricePerNightEl.style.display = 'block';
+    
+    // Update MOBILE header price (when expanded/dates selected)
+    const bottomPriceEl = document.getElementById('bottomPrice');
+    if (bottomPriceEl) {
+        bottomPriceEl.textContent = `$${formatPrice(avgPerNight)}`;
+    }
     
     let detailsHtml = '';
     components.forEach(c => {
