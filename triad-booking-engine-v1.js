@@ -200,12 +200,8 @@ async function fetchListingDetails() {
         const data = await res.json();
         console.log('📦 Response data:', data);
         
-        if (data.result && data.result.minNights) {
-            state.minNights = data.result.minNights;
-            console.log('✅ minNights set to:', state.minNights);
-        } else {
-            console.warn('⚠️ minNights not found in response, using default:', state.minNights);
-        }
+        // ❌ REMOVED: Don't get minNights from listing API - it's the default, not the actual
+        // We get the actual minimumStay from calendar data when user selects check-in date
         
         if (data.result && data.result.refundableDamageDeposit) {
             state.refundableDamageDeposit = parseFloat(data.result.refundableDamageDeposit);
@@ -528,6 +524,13 @@ function selectDate(dateStr) {
         state.checkIn = dateStr;
         state.checkOut = null;
         
+        // ✅ GET MINIMUM STAY FROM THE SELECTED CHECK-IN DATE
+        const checkInDayData = state.calendarData[dateStr];
+        if (checkInDayData && checkInDayData.minimumStay) {
+            state.minNights = checkInDayData.minimumStay;
+            console.log(`✅ Min nights updated to ${state.minNights} from calendar for date ${dateStr}`);
+        }
+        
         document.getElementById('checkOutBox').classList.remove('disabled');
         
         state.isSelectingCheckout = true;
@@ -636,6 +639,15 @@ async function calculatePrice() {
         );
         
         const data = await res.json();
+        
+        // ✅ CHECK FOR ERRORS FROM BACKEND (min stay validation)
+        if (!res.ok || data.error) {
+            showError(data.result?.message || data.error || 'Failed to calculate price');
+            btn.textContent = 'Reserve';
+            btn.disabled = true;
+            return;
+        }
+        
         displayPrice(data.result);
         document.getElementById('footer').classList.add('active');
         
