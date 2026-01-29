@@ -364,7 +364,9 @@ function renderCalendar() {
 }
 
 function changeMonth(delta) {
-    state.currentMonth.setMonth(state.currentMonth.getMonth() + delta);
+    const year = state.currentMonth.getFullYear();
+    const month = state.currentMonth.getMonth();
+    state.currentMonth = new Date(year, month + delta, 1); // Always use day 1
     loadCalendar();
 }
 
