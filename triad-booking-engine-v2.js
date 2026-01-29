@@ -443,14 +443,14 @@ function renderMonth(date) {
         
         // FIXED: Checkout mode logic
         if (state.isSelectingCheckout && state.checkIn) {
-            const nights = Math.round((new Date(dateStr) - new Date(state.checkIn)) / 86400000);
+            const nights = Math.round((parseLocalDate(dateStr) - parseLocalDate(state.checkIn)) / 86400000);
             
             if (nights < state.minNights) {
                 cls += ' checkout-only';
                 tooltip = `Minimum ${state.minNights} nights required`;
             } else {
                 // Check if the NIGHT BEFORE checkout is available (not checkout day itself)
-                const lastNightDate = new Date(dateStr);
+                const lastNightDate = parseLocalDate(dateStr);
                 lastNightDate.setDate(lastNightDate.getDate() - 1);
                 const lastNightStr = fmt(lastNightDate);
                 const lastNightData = state.calendarData[lastNightStr];
@@ -464,7 +464,7 @@ function renderMonth(date) {
         } else if (isAvail) {
             let consecutiveNights = 0;
             for (let i = 0; i < 30; i++) {
-                const futureDate = new Date(dateStr);
+                const futureDate = parseLocalDate(dateStr);
                 futureDate.setDate(futureDate.getDate() + i);
                 const futureDateStr = fmt(futureDate);
                 const futureDayData = state.calendarData[futureDateStr];
@@ -484,7 +484,7 @@ function renderMonth(date) {
         } else if (isPast) {
             cls += ' past';
         } else {
-            const prevDate = new Date(dateStr);
+            const prevDate = parseLocalDate(dateStr);
             prevDate.setDate(prevDate.getDate() - 1);
             const prevDateStr = fmt(prevDate);
             const prevDayData = state.calendarData[prevDateStr];
@@ -542,7 +542,7 @@ function selectDate(dateStr) {
             return;
         }
         
-        const nights = Math.round((new Date(dateStr) - new Date(state.checkIn)) / 86400000);
+        const nights = Math.round((parseLocalDate(dateStr) - parseLocalDate(state.checkIn)) / 86400000);
         const minNights = state.minNights;
         if (nights < minNights) {
             showError(`Minimum stay is ${minNights} nights`);
@@ -550,8 +550,8 @@ function selectDate(dateStr) {
         }
         
         let allAvailable = true;
-        const checkIn = new Date(state.checkIn);
-        const checkOut = new Date(dateStr);
+        const checkIn = parseLocalDate(state.checkIn);
+        const checkOut = parseLocalDate(dateStr);
         
         for (let d = new Date(checkIn); d < checkOut; d.setDate(d.getDate() + 1)) {
             const checkDateStr = fmt(d);
@@ -581,7 +581,7 @@ function updateDateDisplay() {
     const checkOutEl = document.getElementById('checkOutDisplay');
     
     if (state.checkIn) {
-        const d = new Date(state.checkIn);
+        const d = parseLocalDate(state.checkIn);
         checkInEl.textContent = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         checkInEl.classList.remove('placeholder');
     } else {
@@ -590,7 +590,7 @@ function updateDateDisplay() {
     }
     
     if (state.checkOut) {
-        const d = new Date(state.checkOut);
+        const d = parseLocalDate(state.checkOut);
         checkOutEl.textContent = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         checkOutEl.classList.remove('placeholder');
     } else {
@@ -662,7 +662,7 @@ async function calculatePrice() {
 
 function displayPrice(data) {
     const { totalPrice, components } = data;
-    const nights = Math.round((new Date(state.checkOut) - new Date(state.checkIn)) / 86400000);
+    const nights = Math.round((parseLocalDate(state.checkOut) - parseLocalDate(state.checkIn)) / 86400000);
     
     const avgPerNight = Math.round(totalPrice / nights);
     const pricePerNightEl = document.getElementById('pricePerNight');
@@ -818,6 +818,13 @@ function fmt(d) {
 
 function pad(n) {
     return String(n).padStart(2, '0');
+}
+
+function parseLocalDate(dateStr) {
+    // Parse YYYY-MM-DD as local date, not UTC
+    // This prevents timezone offset issues
+    const [year, month, day] = dateStr.split('-').map(Number);
+    return new Date(year, month - 1, day); // month is 0-indexed
 }
 
 function formatPrice(num) {
