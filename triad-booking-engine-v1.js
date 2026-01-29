@@ -25,7 +25,8 @@ let state = {
     calendarData: {},
     currentMonth: new Date(),
     isSelectingCheckout: false,
-    avgPricePerNight: null,
+    minPrice: null,
+    maxPrice: null,
     minNights: 2,
     refundableDamageDeposit: 0
 };
@@ -151,7 +152,7 @@ function closePanel() {
 }
 
 async function fetchAveragePrice() {
-    console.log('🔍 Fetching average price from calendar (90 days)...');
+    console.log('🔍 Fetching price range from calendar (90 days)...');
     const start = new Date();
     const end = new Date();
     end.setDate(end.getDate() + 90);
@@ -163,27 +164,26 @@ async function fetchAveragePrice() {
         const data = await res.json();
         console.log('📊 Calendar data received:', data);
         
-        let total = 0;
-        let count = 0;
+        const prices = [];
         data.result.forEach(d => {
             if (d.isAvailable === 1 && d.price) {
-                total += parseFloat(d.price);
-                count++;
+                prices.push(parseFloat(d.price));
             }
         });
         
-        console.log(`📊 Found ${count} available nights in next 90 days`);
+        console.log(`📊 Found ${prices.length} available nights in next 90 days`);
         
-        if (count > 0) {
-            state.avgPricePerNight = Math.round(total / count);
-            console.log('✅ Average price calculated:', state.avgPricePerNight);
+        if (prices.length > 0) {
+            state.minPrice = Math.round(Math.min(...prices));
+            state.maxPrice = Math.round(Math.max(...prices));
+            console.log('✅ Price range calculated:', state.minPrice, '-', state.maxPrice);
             updateBottomBarPrice();
         } else {
             console.warn('⚠️ No available dates found in next 90 days - hiding price');
             hideBottomBarPrice();
         }
     } catch (err) {
-        console.error('❌ Failed to fetch average price:', err);
+        console.error('❌ Failed to fetch price range:', err);
         hideBottomBarPrice();
     }
 }
@@ -229,11 +229,11 @@ function updateBottomBarPrice() {
     console.log('💰 Updating bottom bar price...');
     const priceEl = document.getElementById('bottomPrice');
     console.log('Price element:', priceEl);
-    console.log('avgPricePerNight:', state.avgPricePerNight);
+    console.log('minPrice:', state.minPrice, 'maxPrice:', state.maxPrice);
     
     if (priceEl) {
-        if (state.avgPricePerNight) {
-            const formattedPrice = `Avg. $${formatPrice(state.avgPricePerNight)}`;
+        if (state.minPrice && state.maxPrice) {
+            const formattedPrice = `$${formatPrice(state.minPrice)}-$${formatPrice(state.maxPrice)}`;
             console.log('✅ Setting price to:', formattedPrice);
             priceEl.textContent = formattedPrice;
             
@@ -242,7 +242,7 @@ function updateBottomBarPrice() {
                 bottomPriceContainer.style.display = 'flex';
             }
         } else {
-            console.log('⚠️ No avgPricePerNight available');
+            console.log('⚠️ No minPrice/maxPrice available');
         }
     }
 }
