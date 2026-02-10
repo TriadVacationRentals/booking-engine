@@ -80,6 +80,73 @@ function init() {
     fetchListingDetails().then(() => {
         updateGuestControls();
     });
+    
+    // ✅ NEW: Read URL parameters and pre-fill dates/guests
+    readAndApplyUrlParams();
+}
+
+// ============================================
+// URL PARAMETER READING - PRE-FILL BOOKING WIDGET
+// ============================================
+function readAndApplyUrlParams() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const checkin = urlParams.get('checkin');
+    const checkout = urlParams.get('checkout');
+    const guests = urlParams.get('guests');
+    
+    console.log('📥 URL Params:', { checkin, checkout, guests });
+    
+    // Apply check-in date
+    if (checkin && isValidDate(checkin)) {
+        state.checkIn = checkin;
+        console.log('✅ Pre-filled check-in:', checkin);
+    }
+    
+    // Apply check-out date
+    if (checkout && isValidDate(checkout)) {
+        state.checkOut = checkout;
+        state.isSelectingCheckout = false;
+        document.getElementById('checkOutBox').classList.remove('disabled');
+        console.log('✅ Pre-filled check-out:', checkout);
+    }
+    
+    // Apply guests
+    if (guests) {
+        const guestCount = parseInt(guests);
+        if (guestCount >= 1 && guestCount <= CONFIG.maxGuests) {
+            state.guests = guestCount;
+            console.log('✅ Pre-filled guests:', guestCount);
+        }
+    }
+    
+    // Update displays
+    if (state.checkIn || state.checkOut) {
+        updateDateDisplay();
+    }
+    
+    if (state.guests) {
+        updateGuestControls();
+    }
+    
+    // Calculate price if both dates are set
+    if (state.checkIn && state.checkOut) {
+        loadCalendar().then(() => {
+            const checkInDayData = state.calendarData[state.checkIn];
+            if (checkInDayData && checkInDayData.minimumStay) {
+                state.minNights = checkInDayData.minimumStay;
+            }
+            calculatePrice();
+        });
+    }
+}
+
+function isValidDate(dateStr) {
+    if (!dateStr) return false;
+    const regex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!regex.test(dateStr)) return false;
+    
+    const date = new Date(dateStr);
+    return date instanceof Date && !isNaN(date);
 }
 
 // NEW FUNCTION: Show not bookable overlay
@@ -199,9 +266,6 @@ async function fetchListingDetails() {
         
         const data = await res.json();
         console.log('📦 Response data:', data);
-        
-        // ❌ REMOVED: Don't get minNights from listing API - it's the default, not the actual
-        // We get the actual minimumStay from calendar data when user selects check-in date
         
         if (data.result && data.result.refundableDamageDeposit) {
             state.refundableDamageDeposit = parseFloat(data.result.refundableDamageDeposit);
@@ -366,7 +430,7 @@ function renderCalendar() {
 function changeMonth(delta) {
     const year = state.currentMonth.getFullYear();
     const month = state.currentMonth.getMonth();
-    state.currentMonth = new Date(year, month + delta, 1); // Always use day 1
+    state.currentMonth = new Date(year, month + delta, 1);
     loadCalendar();
 }
 
@@ -377,7 +441,6 @@ function clearDates() {
     
     document.getElementById('checkOutBox').classList.add('disabled');
     
-    // Restore price range on mobile when dates are cleared
     updateBottomBarPrice();
     
     updateDateDisplay();
@@ -446,7 +509,6 @@ function renderMonth(date) {
         let cls = 'day';
         let tooltip = '';
         
-        // FIXED: Checkout mode logic
         if (state.isSelectingCheckout && state.checkIn) {
             const nights = Math.round((parseLocalDate(dateStr) - parseLocalDate(state.checkIn)) / 86400000);
             
@@ -454,7 +516,6 @@ function renderMonth(date) {
                 cls += ' checkout-only';
                 tooltip = `Minimum ${state.minNights} nights required`;
             } else {
-                // Check if the NIGHT BEFORE checkout is available (not checkout day itself)
                 const lastNightDate = parseLocalDate(dateStr);
                 lastNightDate.setDate(lastNightDate.getDate() - 1);
                 const lastNightStr = fmt(lastNightDate);
@@ -529,7 +590,6 @@ function selectDate(dateStr) {
         state.checkIn = dateStr;
         state.checkOut = null;
         
-        // ✅ GET MINIMUM STAY FROM THE SELECTED CHECK-IN DATE
         const checkInDayData = state.calendarData[dateStr];
         if (checkInDayData && checkInDayData.minimumStay) {
             state.minNights = checkInDayData.minimumStay;
@@ -645,7 +705,6 @@ async function calculatePrice() {
         
         const data = await res.json();
         
-        // ✅ CHECK FOR ERRORS FROM BACKEND (min stay validation)
         if (!res.ok || data.error) {
             showError(data.result?.message || data.error || 'Failed to calculate price');
             btn.textContent = 'Reserve';
@@ -671,12 +730,10 @@ function displayPrice(data) {
     
     const avgPerNight = Math.round(totalPrice / nights);
     
-    // Update DESKTOP price
     const pricePerNightEl = document.getElementById('pricePerNight');
     pricePerNightEl.querySelector('.desktop-price-amount').textContent = `$${formatPrice(avgPerNight)}`;
     pricePerNightEl.style.display = 'block';
     
-    // Update MOBILE header price (when expanded/dates selected)
     const bottomPriceEl = document.getElementById('bottomPrice');
     if (bottomPriceEl) {
         bottomPriceEl.textContent = `$${formatPrice(avgPerNight)}`;
@@ -834,10 +891,8 @@ function pad(n) {
 }
 
 function parseLocalDate(dateStr) {
-    // Parse YYYY-MM-DD as local date, not UTC
-    // This prevents timezone offset issues
     const [year, month, day] = dateStr.split('-').map(Number);
-    return new Date(year, month - 1, day); // month is 0-indexed
+    return new Date(year, month - 1, day);
 }
 
 function formatPrice(num) {
