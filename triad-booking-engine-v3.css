@@ -21,7 +21,7 @@
             opacity: 0;
             pointer-events: none;
             transition: opacity 0.4s;
-            z-index: 199;
+            z-index: 200;
         }
 
         .booking-overlay.open {
@@ -38,7 +38,7 @@
             background: white;
             border-radius: 30px 30px 0 0;
             transform: translateY(0);
-            z-index: 200;
+            z-index: 250;
             display: none; /* Hidden on desktop */
             flex-direction: column;
             height: auto;
